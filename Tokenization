@@ -1,0 +1,19 @@
+# -*- coding:Latin-1 -*
+
+import os
+import csv
+
+train = open('train.tsv')
+reader = csv.reader(train, delimiter = '\t')
+
+result_words = []
+result_numbers = []
+
+for row in reader:
+	result_words.append( row[2].split() )
+	result_numbers.append( row[0:2] + row[3:] )
+
+print(result_words)
+print(result_numbers)
+
+os.system("pause")
