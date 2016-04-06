@@ -6,6 +6,8 @@ from nltk.stem import PorterStemmer
 
 from nltk.tag import PerceptronTagger
 from nltk.data import find
+from nltk.chunk.regexp import RegexpParser
+
 PICKLE = "averaged_perceptron_tagger.pickle"
 AP_MODEL_LOC = 'file:'+str(find('taggers/averaged_perceptron_tagger/'+PICKLE))
 tagger = PerceptronTagger(load=False)
@@ -51,7 +53,7 @@ tag_sentence = pos_tag(filtered_sentence)
 print(tag_sentence)
 
 chunkGram = """ Chunk: { <RB.?>* <JJ?>* <NN>? } """
-chunkParser = nltk.RegexpParser(chunkGram)
+chunkParser = RegexpParser(chunkGram)
 chunked = chunkParser.parse(tag_sentence)
 chunked.draw()
 
