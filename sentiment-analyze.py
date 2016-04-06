@@ -5,6 +5,10 @@
 
 import nltk
 
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
 
@@ -78,6 +82,8 @@ def categorize_reviews(reviews):
 
 def find_features(review_text):
 	words = word_tokenize(review_text)
+	words = process_text(words)
+
 	features_exist = {}
 	for word in features:
 		features_exist[word] = (word in words)
@@ -89,16 +95,15 @@ allwords = extract_allwords(reviews)
 
 processed_words = process_text(allwords)
 
-features = FreqDist(processed_words)
+features = nltk.FreqDist(processed_words)
 features = features.most_common(300)
 features = [key for (key, value) in features]
-print features
 
 
 featuresets = [(find_features(review[2]), review[3]) for review in reviews]
 
-training_set = featuresets[:10000]
-testing_set =  featuresets[10000:20000]
+testing_set = featuresets[:10000]
+training_set =  featuresets[10000:20000]
 
 classifier = nltk.NaiveBayesClassifier.train(training_set)
 print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set))*100)
