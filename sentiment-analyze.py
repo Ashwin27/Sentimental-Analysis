@@ -3,9 +3,14 @@
 # reviews_text/text - text of movie reviews
 # 
 
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
+import nltk
+
+from nltk.classify.scikitlearn import SklearnClassifier
+import pickle
+
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB
+from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.svm import SVC, LinearSVC, NuSVC
 
 import os
 import csv
@@ -18,28 +23,42 @@ neg_rev = []
 
 def read_reviews():
 	train = open('Data/train.tsv')
-	return list(csv.reader(train, delimiter = '\t'))
-
+	reader = list(csv.reader(train, delimiter = '\t'))
+	reader.pop(0)
+	return reader
 
 def extract_text(reviews):
 
+	allwordlists = []
+	for i in range(len(reviews) - 100000):		
+		allwordlists.append(word_tokenize(reviews[i][2]))
+	
+	return allwordlists
+
+def extract_allwords(reviews):
+
 	allwords = []
-	first_row = True
-	for i in range(len(reviews) - 100000):
-		
-		# Skip the first row
-		if first_row:
-			first_row = False
-			continue
-
-		allwords.append(word_tokenize(reviews[i][2]))
-
+	for i in range(len(reviews) - 100000):		
+		for word in word_tokenize(reviews[i][2]):
+			allwords.append(word)
 	return allwords
 
 
 def process_text(text):
 
-	return text
+	stop_words = set(stopwords.words("english"))
+	ps = PorterStemmer()
+
+	processed_text = []
+
+	for w in text:
+		if w in stop_words:
+			continue
+
+		if w.isalpha():
+			processed_text.append(ps.stem(w.lower()))
+
+	return processed_text
 
 
 def categorize_reviews(reviews):
@@ -57,17 +76,36 @@ def categorize_reviews(reviews):
 		else:
 			print("Review out of range. Rejecting...")
 
+def find_features(review_text):
+	words = word_tokenize(review_text)
+	features_exist = {}
+	for word in features:
+		features_exist[word] = (word in words)
+
+	return features_exist
 
 reviews = read_reviews()
-allwordlists = review_text(reviews)
+allwords = extract_allwords(reviews)
 
-allwords = []
-for wordlist in allwordlists:
-	for words in wordlist:
-		allwords.append(wordlist)
+processed_words = process_text(allwords)
 
+features = FreqDist(processed_words)
+features = features.most_common(300)
+features = [key for (key, value) in features]
+print features
+
+
+featuresets = [(find_features(review[2]), review[3]) for review in reviews]
+
+training_set = featuresets[:10000]
+testing_set =  featuresets[10000:20000]
+
+classifier = nltk.NaiveBayesClassifier.train(training_set)
+print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set))*100)
+classifier.show_most_informative_features(15)
 
 '''
+
 # Removes "a", "the" and other neutral words that 
 # do not affect the meaning
 stop_words = set(stopwords.words("english"))
