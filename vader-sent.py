@@ -12,6 +12,8 @@ from nltk.stem import PorterStemmer
 from nltk.sentiment.sentiment_analyzer import SentimentAnalyzer
 from nltk.sentiment.util import *
 
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
 
@@ -21,7 +23,6 @@ from sklearn.svm import SVC, LinearSVC, NuSVC
 
 import os
 import csv
-import types
 
 pos_rev = []
 somewhat_pos_rev = []
@@ -51,11 +52,16 @@ def extract_allwords(reviews):
 			allwords.append(word)
 	return allwords
 
+def vader_score(reviews):
+	sid = SentimentIntensityAnalyzer()
+	scoreCollection = []
+
+	for review in reviews:
+		scoreCollection.append((sid.polarity_scores(review[2]), review[3]))
+
+	return scoreCollection
 
 def process_text(text):
-
-	if isinstance(text, types.StringTypes):
-		text = word_tokenize(text)
 
 	stop_words = set(stopwords.words("english"))
 	ps = PorterStemmer()
@@ -103,9 +109,10 @@ reviews = read_reviews()
 allwords = extract_allwords(reviews)
 processed_words = process_text(allwords)
 
+'''
 sentim_analyzer = SentimentAnalyzer()
-unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=100)
-bigram_feats = sentim_analyzer.bigram_collocation_feats(processed_words, min_freq=50)
+unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=50)
+bigram_feats = sentim_analyzer.bigram_collocation_feats(processed_words, min_freq=10)
 
 print(len(unigram_feats))
 print(len(bigram_feats))
@@ -113,21 +120,28 @@ print(len(bigram_feats))
 sentim_analyzer.add_feat_extractor(extract_unigram_feats, unigrams=unigram_feats)
 sentim_analyzer.add_feat_extractor(extract_bigram_feats, bigrams=bigram_feats)
 
-'''
+extract_unigram_feats
+
+
 features = nltk.FreqDist(processed_words)
 features = features.most_common(1000)
 features = [key for (key, value) in features]
-'''
 
 #featuresets = [(find_features(review[2]), review[3]) for review in reviews]
-print("Extracting Features...")
-featuresets = [(sentim_analyzer.extract_features(process_text(review[2])), review[3]) for review in reviews]
+
+featuresets = [(sentim_analyzer.extract_features(review[2]), review[3]) for review in reviews]
 
 testing_set = featuresets[130000:150000]
 training_set =  featuresets[:130000]
+'''
+print("Getting Vader Score")
 
-print("Feature extraction complete")
+testing_set = vader_score(reviews[130000:150000])
+training_set =  vader_score(reviews[:130000])
 
+print(training_set[0:2])
+
+'''
 # Run only once
 classifier = nltk.NaiveBayesClassifier.train(training_set)
 
@@ -196,7 +210,7 @@ print("LinearSVC_classifier accuracy percent:", (nltk.classify.accuracy(LinearSV
 save_classifier = open("Linear_SVCClassifier.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
-
+'''
 '''
 NuSVC_classifier = SklearnClassifier(NuSVC())
 NuSVC_classifier.train(training_set)
