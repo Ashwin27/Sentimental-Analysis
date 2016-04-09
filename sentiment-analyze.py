@@ -12,6 +12,8 @@ from nltk.stem import PorterStemmer
 from nltk.sentiment.sentiment_analyzer import SentimentAnalyzer
 from nltk.sentiment.util import *
 
+from nltk.collocations import *
+
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
 
@@ -53,14 +55,12 @@ def extract_allwords(reviews):
 
 
 def process_text(text):
-
-	if isinstance(text, types.StringTypes):
-		text = word_tokenize(text)
-
 	stop_words = set(stopwords.words("english"))
 	ps = PorterStemmer()
 
 	processed_text = []
+
+	text = mark_negation(text, True)
 
 	for w in text:
 		if w in stop_words:
@@ -68,8 +68,6 @@ def process_text(text):
 
 		if w.isalpha():
 			processed_text.append(w.lower())
-
-	processed_text = mark_negation(processed_text, True)
 
 	return processed_text
 
@@ -105,10 +103,22 @@ processed_words = process_text(allwords)
 
 sentim_analyzer = SentimentAnalyzer()
 unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=100)
-bigram_feats = sentim_analyzer.bigram_collocation_feats(processed_words, min_freq=50)
+bigram_feats = BigramCollocationFinder.from_words(processed_words)
+trigram_feats = TrigramCollocationFinder.from_words(processed_words)
+
+bigram_measures = nltk.collocations.BigramAssocMeasures()
+trigram_measures = nltk.collocations.TrigramAssocMeasures()
+
+
+bigram_feats = sorted(bigram_feats.nbest(bigram_measures.raw_freq, 75))
+trigram_feats = sorted(trigram_feats.nbest(trigram_measures.raw_freq, 50))
 
 print(len(unigram_feats))
 print(len(bigram_feats))
+print(len(trigram_feats))
+
+print(unigram_feats)
+print(bigram_feats)
 
 sentim_analyzer.add_feat_extractor(extract_unigram_feats, unigrams=unigram_feats)
 sentim_analyzer.add_feat_extractor(extract_bigram_feats, bigrams=bigram_feats)
@@ -121,7 +131,7 @@ features = [key for (key, value) in features]
 
 #featuresets = [(find_features(review[2]), review[3]) for review in reviews]
 print("Extracting Features...")
-featuresets = [(sentim_analyzer.extract_features(process_text(review[2])), review[3]) for review in reviews]
+featuresets = [(sentim_analyzer.extract_features(process_text(word_tokenize(review[2]))), review[3]) for review in reviews]
 
 testing_set = featuresets[130000:150000]
 training_set =  featuresets[:130000]

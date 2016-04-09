@@ -139,9 +139,8 @@ print("Getting Vader Score")
 testing_set = vader_score(reviews[130000:150000])
 training_set =  vader_score(reviews[:130000])
 
-print(training_set[0:2])
-
 '''
+
 # Run only once
 classifier = nltk.NaiveBayesClassifier.train(training_set)
 
@@ -179,6 +178,8 @@ save_classifier = open("bernoulli_naive_bayes.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
 
+'''
+
 LogisticRegression_classifier = SklearnClassifier(LogisticRegression())
 LogisticRegression_classifier.train(training_set)
 print("LogisticRegression_classifier accuracy percent:", (nltk.classify.accuracy(LogisticRegression_classifier, testing_set))*100)
@@ -210,7 +211,6 @@ print("LinearSVC_classifier accuracy percent:", (nltk.classify.accuracy(LinearSV
 save_classifier = open("Linear_SVCClassifier.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
-'''
 '''
 NuSVC_classifier = SklearnClassifier(NuSVC())
 NuSVC_classifier.train(training_set)
