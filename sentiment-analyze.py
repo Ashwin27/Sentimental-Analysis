@@ -102,7 +102,7 @@ allwords = extract_allwords(reviews)
 processed_words = process_text(allwords)
 
 sentim_analyzer = SentimentAnalyzer()
-unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=100)
+unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=400)
 bigram_feats = BigramCollocationFinder.from_words(processed_words)
 trigram_feats = TrigramCollocationFinder.from_words(processed_words)
 
@@ -110,8 +110,8 @@ bigram_measures = nltk.collocations.BigramAssocMeasures()
 trigram_measures = nltk.collocations.TrigramAssocMeasures()
 
 
-bigram_feats = sorted(bigram_feats.nbest(bigram_measures.raw_freq, 75))
-trigram_feats = sorted(trigram_feats.nbest(trigram_measures.raw_freq, 50))
+bigram_feats = sorted(bigram_feats.nbest(bigram_measures.pmi, 200))
+trigram_feats = sorted(trigram_feats.nbest(trigram_measures.pmi, 100))
 
 print(len(unigram_feats))
 print(len(bigram_feats))

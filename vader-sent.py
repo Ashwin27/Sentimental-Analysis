@@ -57,7 +57,9 @@ def vader_score(reviews):
 	scoreCollection = []
 
 	for review in reviews:
-		scoreCollection.append((sid.polarity_scores(review[2]), review[3]))
+		score = (sid.polarity_scores(review[2]), review[3])
+		score['compound'] += 1
+		scoreCollection.append(score)
 
 	return scoreCollection
 
