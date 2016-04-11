@@ -17,6 +17,8 @@ from nltk.collocations import *
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
@@ -67,7 +69,7 @@ def process_text(text):
 			continue
 
 		if w.isalpha():
-			processed_text.append(w.lower())
+			processed_text.append(ps.stem(w.lower()))
 
 	return processed_text
 
@@ -109,7 +111,6 @@ trigram_feats = TrigramCollocationFinder.from_words(processed_words)
 bigram_measures = nltk.collocations.BigramAssocMeasures()
 trigram_measures = nltk.collocations.TrigramAssocMeasures()
 
-
 bigram_feats = sorted(bigram_feats.nbest(bigram_measures.pmi, 200))
 trigram_feats = sorted(trigram_feats.nbest(trigram_measures.pmi, 100))
 
@@ -120,8 +121,19 @@ print(len(trigram_feats))
 print(unigram_feats)
 print(bigram_feats)
 
-sentim_analyzer.add_feat_extractor(extract_unigram_feats, unigrams=unigram_feats)
-sentim_analyzer.add_feat_extractor(extract_bigram_feats, bigrams=bigram_feats)
+''''
+tfidf = TfidfVectorizer(tokenizer=tokenize, stop_words='english')
+tfs = tfidf.fit_transform(unigram_feats)
+
+response = tfidf.transform([str])
+
+feature_names = tfidf.get_feature_names()
+for col in response.nonzero()[1]:
+    print feature_names[col], ' - ', response[0, col]
+'''
+
+#sentim_analyzer.add_feat_extractor(extract_unigram_feats, unigrams=unigram_feats)
+#sentim_analyzer.add_feat_extractor(extract_bigram_feats, bigrams=bigram_feats)
 
 '''
 features = nltk.FreqDist(processed_words)
@@ -137,6 +149,7 @@ testing_set = featuresets[130000:150000]
 training_set =  featuresets[:130000]
 
 print("Feature extraction complete")
+print(training_set[0:3])
 
 # Run only once
 classifier = nltk.NaiveBayesClassifier.train(training_set)

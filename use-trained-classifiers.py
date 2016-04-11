@@ -12,10 +12,12 @@ from nltk.stem import PorterStemmer
 from nltk.sentiment.sentiment_analyzer import SentimentAnalyzer
 from nltk.sentiment.util import *
 
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk.collocations import *
 
 from nltk.classify.scikitlearn import SklearnClassifier
 import pickle
+
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
@@ -23,6 +25,7 @@ from sklearn.svm import SVC, LinearSVC, NuSVC
 
 import os
 import csv
+import types
 
 pos_rev = []
 somewhat_pos_rev = []
@@ -31,7 +34,7 @@ somewhat_neg_rev = []
 neg_rev = []
 
 def read_reviews():
-	train = open('Data/train.tsv')
+	train = open('Data/test.tsv')
 	reader = list(csv.reader(train, delimiter = '\t'))
 	reader.pop(0)
 	return reader
@@ -52,32 +55,21 @@ def extract_allwords(reviews):
 			allwords.append(word)
 	return allwords
 
-def vader_score(reviews):
-	sid = SentimentIntensityAnalyzer()
-	scoreCollection = []
-
-	for review in reviews:
-		score = (sid.polarity_scores(review[2]), review[3])
-		score[0]['compound'] += 1
-		scoreCollection.append(score)
-
-	return scoreCollection
 
 def process_text(text):
-
 	stop_words = set(stopwords.words("english"))
 	ps = PorterStemmer()
 
 	processed_text = []
+
+	text = mark_negation(text, True)
 
 	for w in text:
 		if w in stop_words:
 			continue
 
 		if w.isalpha():
-			processed_text.append(w.lower())
-
-	processed_text = mark_negation(processed_text, True)
+			processed_text.append(ps.stem(w.lower()))
 
 	return processed_text
 
@@ -111,46 +103,69 @@ reviews = read_reviews()
 allwords = extract_allwords(reviews)
 processed_words = process_text(allwords)
 
-'''
 sentim_analyzer = SentimentAnalyzer()
-unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=50)
-bigram_feats = sentim_analyzer.bigram_collocation_feats(processed_words, min_freq=10)
+unigram_feats = sentim_analyzer.unigram_word_feats(processed_words, min_freq=400)
+bigram_feats = BigramCollocationFinder.from_words(processed_words)
+trigram_feats = TrigramCollocationFinder.from_words(processed_words)
+
+bigram_measures = nltk.collocations.BigramAssocMeasures()
+trigram_measures = nltk.collocations.TrigramAssocMeasures()
+
+bigram_feats = sorted(bigram_feats.nbest(bigram_measures.pmi, 200))
+trigram_feats = sorted(trigram_feats.nbest(trigram_measures.pmi, 100))
 
 print(len(unigram_feats))
 print(len(bigram_feats))
+print(len(trigram_feats))
 
-sentim_analyzer.add_feat_extractor(extract_unigram_feats, unigrams=unigram_feats)
-sentim_analyzer.add_feat_extractor(extract_bigram_feats, bigrams=bigram_feats)
+print(unigram_feats)
+print(bigram_feats)
 
-extract_unigram_feats
+'''
 
+tfidf = TfidfVectorizer(tokenizer=process_text, stop_words='english')
+tfs = tfidf.fit_transform(unigram_feats)
 
+response = tfidf.transform([str])
+
+feature_names = tfidf.get_feature_names()
+for col in response.nonzero()[1]:
+    print feature_names[col], ' - ', response[0, col]
+'''
+
+#sentim_analyzer.add_feat_extractor(extract_unigram_feats, unigrams=unigram_feats)
+#sentim_analyzer.add_feat_extractor(extract_bigram_feats, bigrams=bigram_feats)
+
+'''
 features = nltk.FreqDist(processed_words)
 features = features.most_common(1000)
 features = [key for (key, value) in features]
+'''
 
 #featuresets = [(find_features(review[2]), review[3]) for review in reviews]
+print("Extracting Features...")
+training_set = [(review[1], sentim_analyzer.extract_features(process_text(word_tokenize(review[2])))) for review in reviews]
 
-featuresets = [(sentim_analyzer.extract_features(review[2]), review[3]) for review in reviews]
-
-testing_set = featuresets[130000:150000]
-training_set =  featuresets[:130000]
-'''
-print("Getting Vader Score")
-
-testing_set = vader_score(reviews[130000:150000])
-training_set =  vader_score(reviews[:130000])
-
-'''
+print("Feature extraction complete")
 
 # Run only once
-classifier = nltk.NaiveBayesClassifier.train(training_set)
+#classifier = nltk.NaiveBayesClassifier.train(training_set)
 
-#classifier_f = open("naive_bayes.pickle", "rb")
-#classifier = pickle.load(classifier_f)
-#classifier_f.close()
+classifier_f = open("naive_bayes.pickle", "rb")
+classifier = pickle.load(classifier_f)
+classifier_f.close()
+
+csvfile = open('submission.csv', 'w+', newline='')
+spamwriter = csv.writer(csvfile, delimiter=',')
+spamwriter.writerow(['PhraseId', 'Sentiment'])
+
+for (PhraseId, FeatureSet) in training_set:
+	print(PhraseId)
+	print(FeatureSet)
+	spamwriter.writerow([PhraseId, classifier.classify(FeatureSet)])
 
 
+'''
 # Naive Bayes
 print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set))*100)
 classifier.show_most_informative_features(15)
@@ -179,8 +194,6 @@ print("BernoulliNB_classifier accuracy percent:", (nltk.classify.accuracy(Bernou
 save_classifier = open("bernoulli_naive_bayes.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
-
-'''
 
 LogisticRegression_classifier = SklearnClassifier(LogisticRegression())
 LogisticRegression_classifier.train(training_set)
@@ -213,12 +226,5 @@ print("LinearSVC_classifier accuracy percent:", (nltk.classify.accuracy(LinearSV
 save_classifier = open("Linear_SVCClassifier.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
-'''
-NuSVC_classifier = SklearnClassifier(NuSVC())
-NuSVC_classifier.train(training_set)
-print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set))*100)
 
-save_classifier = open("NU_SVCClassifier.pickle", "wb")
-pickle.dump(classifier, save_classifier)
-save_classifier.close()
 '''
