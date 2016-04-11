@@ -159,6 +159,16 @@ classifier = nltk.NaiveBayesClassifier.train(training_set)
 #classifier_f.close()
 
 
+
+LinearSVC_classifier = SklearnClassifier(LinearSVC())
+LinearSVC_classifier.train(training_set)
+print("LinearSVC_classifier accuracy percent:", (nltk.classify.accuracy(LinearSVC_classifier, testing_set))*100)
+
+save_classifier = open("Linear_SVCClassifier.pickle", "wb")
+pickle.dump(classifier, save_classifier)
+save_classifier.close()
+
+'''
 # Naive Bayes
 print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set))*100)
 classifier.show_most_informative_features(15)
@@ -211,21 +221,3 @@ print("SVC_classifier accuracy percent:", (nltk.classify.accuracy(SVC_classifier
 save_classifier = open("SVCClassifier.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
-
-LinearSVC_classifier = SklearnClassifier(LinearSVC())
-LinearSVC_classifier.train(training_set)
-print("LinearSVC_classifier accuracy percent:", (nltk.classify.accuracy(LinearSVC_classifier, testing_set))*100)
-
-save_classifier = open("Linear_SVCClassifier.pickle", "wb")
-pickle.dump(classifier, save_classifier)
-save_classifier.close()
-
-'''
-NuSVC_classifier = SklearnClassifier(NuSVC())
-NuSVC_classifier.train(training_set)
-print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set))*100)
-
-save_classifier = open("NU_SVCClassifier.pickle", "wb")
-pickle.dump(classifier, save_classifier)
-save_classifier.close()
-'''
