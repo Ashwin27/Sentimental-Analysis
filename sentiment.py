@@ -79,8 +79,8 @@ def process_text(text):
 		if w in stop_words:
 			continue
 
-		if w.isalpha():
-			processed_text.append(ps.stem(w.lower()))
+		#if w.isalpha():
+		processed_text.append(ps.stem(w.lower()))
 
 	return processed_text
 
@@ -122,15 +122,15 @@ for review in training_reviews:
 
 X_train = asarray(training_set)
 
-#clf1 = OneVsOneClassifier(LinearSVC())
+clf1 = OneVsOneClassifier(LinearSVC())
 clf2 = OneVsRestClassifier(LinearSVC())
-#clf3 = RandomForestClassifier()
+clf3 = RandomForestClassifier()
 
-#eclf = VotingClassifier(estimators=[('ovrSVM', clf2), ('rf', clf3)], voting='soft')
+eclf = VotingClassifier(estimators=[('ovoSVM', clf1), ('ovrSVM', clf2), ('rf', clf3)], voting='hard')
 
-text_clf = Pipeline([('vect', CountVectorizer( ngram_range=(1,2))),
+text_clf = Pipeline([('vect', CountVectorizer(analyzer='word', ngram_range=(1,2), stop_words='english', max_features=5000)),
                       ('tfidf', TfidfTransformer()),
-                      ('clf', clf2),
+                      ('eclf', eclf),
 ])
 
 text_clf = text_clf.fit(X_train, asarray(training_labels))
