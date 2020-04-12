@@ -33,7 +33,7 @@ neutral_rev = []
 somewhat_neg_rev = []
 neg_rev = []
 
-def read_reviews():
+def read_reviews(filePath="Data/train.tsv"):
 	train = open('Data/train.tsv')
 	reader = list(csv.reader(train, delimiter = '\t'))
 	reader.pop(0)
@@ -221,3 +221,4 @@ print("SVC_classifier accuracy percent:", (nltk.classify.accuracy(SVC_classifier
 save_classifier = open("SVCClassifier.pickle", "wb")
 pickle.dump(classifier, save_classifier)
 save_classifier.close()
+'''
